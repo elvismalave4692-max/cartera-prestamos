@@ -517,7 +517,7 @@ function mostrarLogin(){
 function cerrarLogin(){
   document.getElementById('ov-login').classList.remove('open');
 }
-window.intentarLogin = function(){
+function intentarLogin(){
   const pin = document.getElementById('pin-input').value.trim();
   if(pin === PIN_ADMIN){ rolActual='admin'; cerrarLogin(); toast('✅ Bienvenido, Admin'); aplicarRol(); renderInicio(); }
   else if(pin === PIN_OPERADORA){ rolActual='operadora'; cerrarLogin(); toast('✅ Bienvenida, Operadora'); aplicarRol(); renderInicio(); }
@@ -1682,12 +1682,7 @@ function reimportar(){
 }
 
 // ===== EXPONER FUNCIONES AL SCOPE GLOBAL (necesario para onclick en módulos) =====
-window.intentarLogin = function(){
-  const pin = document.getElementById('pin-input').value.trim();
-  if(pin === PIN_ADMIN){ rolActual='admin'; cerrarLogin(); toast('✅ Bienvenido, Admin'); aplicarRol(); renderInicio(); }
-  else if(pin === PIN_OPERADORA){ rolActual='operadora'; cerrarLogin(); toast('✅ Bienvenida, Operadora'); aplicarRol(); renderInicio(); }
-  else { toast('❌ PIN incorrecto'); document.getElementById('pin-input').value=''; }
-}
+window.intentarLogin = intentarLogin;
 window.cerrarSesion = cerrarSesion;
 window.navTo = navTo;
 window.abrir = abrir;
