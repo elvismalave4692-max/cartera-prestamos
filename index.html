@@ -217,12 +217,10 @@ canvas{width:100%!important;display:block}
 
 /* TOAST */
 .toast{position:fixed;bottom:calc(88px + var(--sb));left:50%;transform:translateX(-50%) translateY(10px);background:var(--s2);border:1px solid var(--bd2);border-radius:20px;padding:9px 16px;font-size:12px;font-weight:500;color:var(--t);z-index:200;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap}
-.rol-badge{position:fixed;top:calc(var(--st) + 8px);right:56px;z-index:45;background:var(--s2);border:1px solid var(--bd2);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--t2);cursor:pointer;display:flex;align-items:center;gap:5px;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
-<div id="rol-badge" class="rol-badge" onclick="cerrarSesion()" style="display:none">👤 <span id="rol-label"></span> · Salir</div>
 <div class="app">
 
 <!-- INICIO -->
@@ -466,194 +464,32 @@ canvas{width:100%!important;display:block}
 </div>
 <div class="toast" id="toast"></div>
 
-<!-- LOGIN OVERLAY -->
-<div class="ov" id="ov-login" style="align-items:center;">
-  <div class="sh2" style="border-radius:20px;max-width:340px;padding:28px 24px;">
-    <div style="text-align:center;margin-bottom:20px;">
-      <div style="font-size:40px;margin-bottom:8px;">🔐</div>
-      <div style="font-size:18px;font-weight:700;color:var(--t)">Cartera de Préstamos</div>
-      <div style="font-size:13px;color:var(--t2);margin-top:4px;">Ingresa tu PIN para continuar</div>
-    </div>
-    <div class="fg">
-      <label class="fl">PIN de acceso</label>
-      <input type="password" id="pin-input" class="fi" placeholder="••••" maxlength="6" style="font-size:22px;letter-spacing:6px;text-align:center;" onkeydown="if(event.key==='Enter')intentarLogin()"/>
-    </div>
-    <button class="bm" onclick="intentarLogin()" style="width:100%;margin-top:8px;padding:14px;">Entrar</button>
-    <div style="margin-top:16px;padding:12px;background:var(--s2);border-radius:10px;font-size:11px;color:var(--t3);text-align:center;">
-      Admin: PIN completo · Operadora: su PIN
-    </div>
-  </div>
-</div>
-
-<script type="importmap">
-{
-  "imports": {
-    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js",
-    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-  }
-}
-</script>
-<script type="module">
-import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCklxol2lJqusN3lwoN8sWcraimQRGxA6c",
-  authDomain: "cartera-prestamos-140d7.firebaseapp.com",
-  projectId: "cartera-prestamos-140d7",
-  storageBucket: "cartera-prestamos-140d7.firebasestorage.app",
-  messagingSenderId: "562092303591",
-  appId: "1:562092303591:web:d095978882fdd898672e42"
-};
-const fbApp = initializeApp(firebaseConfig);
-const db = getFirestore(fbApp);
-
-window._db = db;
-window._doc = doc;
-window._getDoc = getDoc;
-window._setDoc = setDoc;
-window._onSnapshot = onSnapshot;
-
-// Cargar datos y luego iniciar app
-window._initApp();
-</script>
-
 <script>
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}
 const HOY = new Date();
 document.getElementById('fecha-top').textContent = HOY.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
 
-// ===== ROLES / LOGIN =====
-const PIN_ADMIN = '1234';
-const PIN_OPERADORA = '5678';
-let rolActual = null;
-
-function mostrarLogin(){
-  document.getElementById('ov-login').classList.add('open');
-}
-function cerrarLogin(){
-  document.getElementById('ov-login').classList.remove('open');
-}
-function intentarLogin(){
-  const pin = document.getElementById('pin-input').value.trim();
-  if(pin === PIN_ADMIN){ rolActual='admin'; cerrarLogin(); toast('✅ Bienvenido, Admin'); aplicarRol(); renderInicio(); }
-  else if(pin === PIN_OPERADORA){ rolActual='operadora'; cerrarLogin(); toast('✅ Bienvenida, Operadora'); aplicarRol(); renderInicio(); }
-  else { toast('❌ PIN incorrecto'); document.getElementById('pin-input').value=''; }
-}
-function aplicarRol(){
-  const soloAdmin = document.querySelectorAll('.solo-admin');
-  soloAdmin.forEach(el => el.style.display = rolActual==='admin' ? '' : 'none');
-  const tabFin = document.querySelector('.ni[onclick*="finanzas"]');
-  if(tabFin) tabFin.style.display = rolActual==='admin' ? '' : 'none';
-  const tabAjustes = document.querySelector('.ni[onclick*="ajustes"]');
-  if(tabAjustes) tabAjustes.style.display = rolActual==='admin' ? '' : 'none';
-  const badge = document.getElementById('rol-badge');
-  const label = document.getElementById('rol-label');
-  if(badge && label){ badge.style.display='flex'; label.textContent=rolActual==='admin'?'Admin':'Operadora'; }
-}
-function cerrarSesion(){
-  if(confirm('¿Cerrar sesión?')){ rolActual=null; document.getElementById('rol-badge').style.display='none'; mostrarLogin(); }
-}
-function requireAdmin(fn){
-  if(rolActual!=='admin'){ toast('⛔ Solo el administrador puede hacer esto'); return; }
-  fn();
-}
-
 // ===== DATA =====
-let clientes = [];
-let prestamos = [];
-let historial = [];
-let capitalTotal = 0;
-let pagosSocios = [];
-let socioNombres = {"s1":"Socio 1","s2":"Socio 2"};
-let gastos = [];
+let clientes = JSON.parse(localStorage.getItem('cli_v4')||'[]');
+let prestamos = JSON.parse(localStorage.getItem('prest_v4')||'[]');
+let historial = JSON.parse(localStorage.getItem('hist_v4')||'[]');
+let capitalTotal = parseFloat(localStorage.getItem('capital_total')||'0');
+let pagosSocios = JSON.parse(localStorage.getItem('pagos_socios')||'[]');
+let socioNombres = JSON.parse(localStorage.getItem('socio_nombres')||'{"s1":"Socio 1","s2":"Socio 2"}');
+let gastos = JSON.parse(localStorage.getItem('gastos_v4')||'[]');
 let finTab = 'socios';
 let gastoFiltro = 'todo';
 let pagoSocioActual = '';
 let editId = null, pagosId = null;
-let dbCargada = false;
-}
 
-// ===== DATA =====
-let clientes = [];
-let prestamos = [];
-let historial = [];
-let capitalTotal = 0;
-let pagosSocios = [];
-let socioNombres = {"s1":"Socio 1","s2":"Socio 2"};
-let gastos = [];
-let finTab = 'socios';
-let gastoFiltro = 'todo';
-let pagoSocioActual = '';
-let editId = null, pagosId = null;
-let dbCargada = false;
-
-// ===== GUARDAR EN FIREBASE =====
-async function save(){
-  try {
-    const db=window._db, doc=window._doc, setDoc=window._setDoc;
-    await setDoc(doc(db,'app','datos'), {
-      clientes, prestamos, historial, capitalTotal,
-      pagosSocios, socioNombres, gastos,
-      actualizado: new Date().toISOString()
-    });
-  } catch(e){ console.error('Error guardando:',e); toast('⚠️ Error al guardar'); }
-}
-
-// ===== CARGAR DESDE FIREBASE =====
-async function cargarDatos(){
-  try {
-    const db=window._db, doc=window._doc, getDoc=window._getDoc;
-    const snap = await getDoc(doc(db,'app','datos'));
-    if(snap.exists()){
-      const d = snap.data();
-      clientes = d.clientes||[];
-      prestamos = d.prestamos||[];
-      historial = d.historial||[];
-      capitalTotal = d.capitalTotal||0;
-      pagosSocios = d.pagosSocios||[];
-      socioNombres = d.socioNombres||{"s1":"Socio 1","s2":"Socio 2"};
-      gastos = d.gastos||[];
-    } else {
-      const pv4 = JSON.parse(localStorage.getItem('prest_v4')||'[]');
-      if(pv4.length>0){
-        clientes = JSON.parse(localStorage.getItem('cli_v4')||'[]');
-        prestamos = pv4;
-        historial = JSON.parse(localStorage.getItem('hist_v4')||'[]');
-        capitalTotal = parseFloat(localStorage.getItem('capital_total')||'0');
-        pagosSocios = JSON.parse(localStorage.getItem('pagos_socios')||'[]');
-        socioNombres = JSON.parse(localStorage.getItem('socio_nombres')||'{"s1":"Socio 1","s2":"Socio 2"}');
-        gastos = JSON.parse(localStorage.getItem('gastos_v4')||'[]');
-        await save();
-        toast('✅ Datos migrados a la nube');
-      }
-    }
-    dbCargada = true;
-  } catch(e){ console.error('Error cargando:',e); toast('⚠️ Error al conectar con la base de datos'); }
-}
-
-// Escuchar cambios en tiempo real
-function iniciarListener(){
-  const db=window._db, doc=window._doc, onSnapshot=window._onSnapshot;
-  onSnapshot(doc(db,'app','datos'), (snap)=>{
-    if(!snap.exists()||!dbCargada) return;
-    const d = snap.data();
-    clientes = d.clientes||[];
-    prestamos = d.prestamos||[];
-    historial = d.historial||[];
-    capitalTotal = d.capitalTotal||0;
-    pagosSocios = d.pagosSocios||[];
-    socioNombres = d.socioNombres||{"s1":"Socio 1","s2":"Socio 2"};
-    gastos = d.gastos||[];
-    if(rolActual) renderInicio();
-  });
-}
-
-// _initApp es llamado por el módulo de Firebase cuando está listo
-window._initApp = async function(){
-  await cargarDatos();
-  iniciarListener();
-  mostrarLogin();
+function save(){
+  localStorage.setItem('cli_v4',JSON.stringify(clientes));
+  localStorage.setItem('prest_v4',JSON.stringify(prestamos));
+  localStorage.setItem('hist_v4',JSON.stringify(historial));
+  localStorage.setItem('capital_total',capitalTotal.toString());
+  localStorage.setItem('pagos_socios',JSON.stringify(pagosSocios));
+  localStorage.setItem('socio_nombres',JSON.stringify(socioNombres));
+  localStorage.setItem('gastos_v4',JSON.stringify(gastos));
 }
 
 // ===== MIGRACIÓN AUTOMÁTICA =====
@@ -773,7 +609,7 @@ function clickOv(e,id){if(e.target.id===id)cerrar(id);}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
 
 // ===== CAPITAL =====
-function abrirCapital(){requireAdmin(()=>{document.getElementById('cap-total-inp').value=capitalTotal||'';abrir('ov-capital');});}
+function abrirCapital(){document.getElementById('cap-total-inp').value=capitalTotal||'';abrir('ov-capital');}
 function guardarCapital(){
   const v=parseFloat(document.getElementById('cap-total-inp').value);
   if(!v||v<=0){toast('⚠️ Ingresa un monto válido');return;}
@@ -955,12 +791,10 @@ function guardarEdit(){
 
 // ===== ELIMINAR =====
 function eliminar(id){
-  requireAdmin(()=>{
-    const p=prestamos.find(x=>x.id===id);const c=clientes.find(x=>x.id===p.clienteId);
-    if(confirm('¿Eliminar préstamo de '+(c?c.nombre:'este cliente')+'?')){
-      prestamos=prestamos.filter(x=>x.id!==id);save();renderInicio();toast('🗑 Eliminado');
-    }
-  });
+  const p=prestamos.find(x=>x.id===id);const c=clientes.find(x=>x.id===p.clienteId);
+  if(confirm('¿Eliminar préstamo de '+(c?c.nombre:'este cliente')+'?')){
+    prestamos=prestamos.filter(x=>x.id!==id);save();renderInicio();toast('🗑 Eliminado');
+  }
 }
 
 // ===== RENDER INICIO =====
@@ -1246,14 +1080,12 @@ function renderAjustes(){
     </div>`;
 }
 function borrarTodo(){
-  requireAdmin(()=>{
-    if(confirm('¿Seguro que quieres borrar TODOS los datos? Esta acción no se puede deshacer.')){
-      if(confirm('¿Estás completamente seguro?')){
-        clientes=[];prestamos=[];historial=[];capitalTotal=0;save();
-        renderInicio();toast('🗑 Todos los datos borrados');
-      }
+  if(confirm('¿Seguro que quieres borrar TODOS los datos? Esta acción no se puede deshacer.')){
+    if(confirm('¿Estás completamente seguro?')){
+      clientes=[];prestamos=[];historial=[];capitalTotal=0;save();
+      renderInicio();toast('🗑 Todos los datos borrados');
     }
-  });
+  }
 }
 
 // ===== EXPORTAR CSV =====
@@ -1714,56 +1546,8 @@ function reimportar(){
   else toast('ℹ️ Los datos ya estaban importados');
 }
 
-// ===== EXPONER FUNCIONES AL SCOPE GLOBAL (necesario para onclick en módulos) =====
-window.intentarLogin = intentarLogin;
-window.cerrarSesion = cerrarSesion;
-window.navTo = navTo;
-window.abrir = abrir;
-window.cerrar = cerrar;
-window.clickOv = clickOv;
-window.abrirCapital = abrirCapital;
-window.guardarCapital = guardarCapital;
-window.abrirNuevoCli = abrirNuevoCli;
-window.guardarCli = guardarCli;
-window.renderClientes = renderClientes;
-window.verCli = verCli;
-window.abrirNuevoPrestamo = abrirNuevoPrestamo;
-window.prevCuota = prevCuota;
-window.guardarPrestamo = guardarPrestamo;
-window.abrirPagos = abrirPagos;
-window.renderPagos = renderPagos;
-window.marcarPago = marcarPago;
-window.aplicarAbono = aplicarAbono;
-window.editarPrestamo = editarPrestamo;
-window.guardarEdit = guardarEdit;
-window.eliminar = eliminar;
-window.renderInicio = renderInicio;
-window.renderReporte = renderReporte;
-window.dibujarChart = dibujarChart;
-window.renderHistorial = renderHistorial;
-window.renderAjustes = renderAjustes;
-window.borrarTodo = borrarTodo;
-window.exportarCSV = exportarCSV;
-window.exportarBackup = exportarBackup;
-window.importarBackup = importarBackup;
-window.importarMerge = importarMerge;
-window.calcGananciaSocios = calcGananciaSocios;
-window.renderFinanzas = renderFinanzas;
-window.abrirEditSocio = abrirEditSocio;
-window.guardarNombreSocio = guardarNombreSocio;
-window.renderSocios = renderSocios;
-window.abrirPagoSocio = abrirPagoSocio;
-window.guardarPagoSocio = guardarPagoSocio;
-window.eliminarPagoSocio = eliminarPagoSocio;
-window.renderGastos = renderGastos;
-window.abrirNuevoGasto = abrirNuevoGasto;
-window.guardarGasto = guardarGasto;
-window.eliminarGasto = eliminarGasto;
-window.renderHistorialFin = renderHistorialFin;
-window.reimportar = reimportar;
-
 // ===== INIT =====
-// renderInicio se llama después del login
+renderInicio();
 </script>
 </body>
 </html>
