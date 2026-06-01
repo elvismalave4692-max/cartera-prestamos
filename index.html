@@ -485,14 +485,17 @@ canvas{width:100%!important;display:block}
   </div>
 </div>
 
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+  }
+}
+</script>
 <script type="module">
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}
-const HOY = new Date();
-document.getElementById('fecha-top').textContent = HOY.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
-
-// ===== FIREBASE =====
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCklxol2lJqusN3lwoN8sWcraimQRGxA6c",
@@ -505,11 +508,25 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 
-// ===== ROLES / LOGIN =====
-const PIN_ADMIN = '1234';      // TÚ — acceso total
-const PIN_OPERADORA = '5678';  // TU HERMANA — solo prestar y cobrar
+window._db = db;
+window._doc = doc;
+window._getDoc = getDoc;
+window._setDoc = setDoc;
+window._onSnapshot = onSnapshot;
 
-let rolActual = null; // 'admin' | 'operadora'
+// Cargar datos y luego iniciar app
+window._initApp();
+</script>
+
+<script>
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}
+const HOY = new Date();
+document.getElementById('fecha-top').textContent = HOY.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
+
+// ===== ROLES / LOGIN =====
+const PIN_ADMIN = '1234';
+const PIN_OPERADORA = '5678';
+let rolActual = null;
 
 function mostrarLogin(){
   document.getElementById('ov-login').classList.add('open');
@@ -530,13 +547,9 @@ function aplicarRol(){
   if(tabFin) tabFin.style.display = rolActual==='admin' ? '' : 'none';
   const tabAjustes = document.querySelector('.ni[onclick*="ajustes"]');
   if(tabAjustes) tabAjustes.style.display = rolActual==='admin' ? '' : 'none';
-  // Mostrar badge
   const badge = document.getElementById('rol-badge');
   const label = document.getElementById('rol-label');
-  if(badge && label){
-    badge.style.display = 'flex';
-    label.textContent = rolActual==='admin' ? 'Admin' : 'Operadora';
-  }
+  if(badge && label){ badge.style.display='flex'; label.textContent=rolActual==='admin'?'Admin':'Operadora'; }
 }
 function cerrarSesion(){
   if(confirm('¿Cerrar sesión?')){ rolActual=null; document.getElementById('rol-badge').style.display='none'; mostrarLogin(); }
@@ -559,10 +572,26 @@ let gastoFiltro = 'todo';
 let pagoSocioActual = '';
 let editId = null, pagosId = null;
 let dbCargada = false;
+}
+
+// ===== DATA =====
+let clientes = [];
+let prestamos = [];
+let historial = [];
+let capitalTotal = 0;
+let pagosSocios = [];
+let socioNombres = {"s1":"Socio 1","s2":"Socio 2"};
+let gastos = [];
+let finTab = 'socios';
+let gastoFiltro = 'todo';
+let pagoSocioActual = '';
+let editId = null, pagosId = null;
+let dbCargada = false;
 
 // ===== GUARDAR EN FIREBASE =====
 async function save(){
   try {
+    const db=window._db, doc=window._doc, setDoc=window._setDoc;
     await setDoc(doc(db,'app','datos'), {
       clientes, prestamos, historial, capitalTotal,
       pagosSocios, socioNombres, gastos,
@@ -574,6 +603,7 @@ async function save(){
 // ===== CARGAR DESDE FIREBASE =====
 async function cargarDatos(){
   try {
+    const db=window._db, doc=window._doc, getDoc=window._getDoc;
     const snap = await getDoc(doc(db,'app','datos'));
     if(snap.exists()){
       const d = snap.data();
@@ -585,7 +615,6 @@ async function cargarDatos(){
       socioNombres = d.socioNombres||{"s1":"Socio 1","s2":"Socio 2"};
       gastos = d.gastos||[];
     } else {
-      // Primera vez: migrar desde localStorage si hay datos
       const pv4 = JSON.parse(localStorage.getItem('prest_v4')||'[]');
       if(pv4.length>0){
         clientes = JSON.parse(localStorage.getItem('cli_v4')||'[]');
@@ -604,24 +633,28 @@ async function cargarDatos(){
 }
 
 // Escuchar cambios en tiempo real
-onSnapshot(doc(db,'app','datos'), (snap)=>{
-  if(!snap.exists()||!dbCargada) return;
-  const d = snap.data();
-  clientes = d.clientes||[];
-  prestamos = d.prestamos||[];
-  historial = d.historial||[];
-  capitalTotal = d.capitalTotal||0;
-  pagosSocios = d.pagosSocios||[];
-  socioNombres = d.socioNombres||{"s1":"Socio 1","s2":"Socio 2"};
-  gastos = d.gastos||[];
-  renderInicio();
-});
+function iniciarListener(){
+  const db=window._db, doc=window._doc, onSnapshot=window._onSnapshot;
+  onSnapshot(doc(db,'app','datos'), (snap)=>{
+    if(!snap.exists()||!dbCargada) return;
+    const d = snap.data();
+    clientes = d.clientes||[];
+    prestamos = d.prestamos||[];
+    historial = d.historial||[];
+    capitalTotal = d.capitalTotal||0;
+    pagosSocios = d.pagosSocios||[];
+    socioNombres = d.socioNombres||{"s1":"Socio 1","s2":"Socio 2"};
+    gastos = d.gastos||[];
+    if(rolActual) renderInicio();
+  });
+}
 
-// Iniciar app
-(async ()=>{
+// _initApp es llamado por el módulo de Firebase cuando está listo
+window._initApp = async function(){
   await cargarDatos();
+  iniciarListener();
   mostrarLogin();
-})()
+}
 
 // ===== MIGRACIÓN AUTOMÁTICA =====
 (function migrar(){
