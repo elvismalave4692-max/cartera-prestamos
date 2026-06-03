@@ -855,15 +855,12 @@ function renderInicio(){
   const totalIntMes=prestamos.reduce((a,p)=>a+p.capital*(p.tasa/100),0);
   const totalVenc=prestamos.reduce((a,p)=>a+p.pagos.filter(x=>!x.pagado&&isVenc(x.fecha)).length,0);
   const totalCob=prestamos.reduce((a,p)=>a+p.pagos.filter(x=>x.pagado&&!x.esCapital).reduce((s,pg)=>s+pg.monto,0),0);
-  // Capital cobrado (principal recuperado de préstamos pagados)
-  const capRecuperado=prestamos.reduce((a,p)=>{
-    const todosPagados=p.pagos.length>0&&p.pagos.every(x=>x.pagado);
-    return a+(todosPagados?p.capital:0);
-  },0);
+  // Todo el dinero cobrado (capital + intereses) vuelve al disponible
+  const totalCobrado=prestamos.reduce((a,p)=>a+p.pagos.filter(x=>x.pagado).reduce((s,pg)=>s+pg.monto,0),0);
 
   // Banner capital
   if(capitalTotal>0){
-    const capEnCalle=totalCap-capRecuperado;
+    const capEnCalle=Math.max(0,totalCap-totalCobrado);
     const disp=Math.max(0,capitalTotal-capEnCalle);
     const pct=Math.min(100,Math.round(capEnCalle/capitalTotal*100));
     bannerEl.innerHTML=`<div class="cap-banner">
