@@ -1258,9 +1258,22 @@ function importarMerge(){
 // ===== FINANZAS: SOCIOS & GASTOS =====
 
 function calcGananciaSocios(){
-  // Total interés cobrado (excluyendo devoluciones de capital)
-  const totalCobrado = prestamos.reduce((a,p) =>
-    a + p.pagos.filter(x=>x.pagado&&!x.esCapital).reduce((s,pg)=>s+pg.monto,0), 0);
+  // Solo contar intereses reales — no el capital devuelto
+  const totalCobrado = prestamos.reduce((a,p) => {
+    return a + p.pagos.filter(x=>x.pagado).reduce((s,pg) => {
+      if(pg.esCapital) return s; // devolución de capital puro, no contar
+      // Si es cuota mixta (capital+interés), calcular solo el interés
+      const interes = p.capital * (p.tasa/100);
+      const esInteresPuro = p.tipo==='interes'; // solo interés mensual
+      if(esInteresPuro){
+        return s + pg.monto; // es puro interés
+      } else {
+        // cuota fija: restar el capital dividido en cuotas
+        const capPorCuota = p.capital / p.plazo;
+        return s + Math.max(0, pg.monto - capPorCuota);
+      }
+    }, 0);
+  }, 0);
   // Total gastos
   const totalGastos = gastos.reduce((a,g)=>a+g.monto,0);
   const neto = Math.max(0, totalCobrado - totalGastos);
