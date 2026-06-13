@@ -885,13 +885,15 @@ function renderInicio(){
     <div class="mc ${totalVenc?'w':''}"><div class="ml">Vencidos</div><div class="mv ${totalVenc?'w':''}">${totalVenc}</div></div>
     <div class="mc g"><div class="ml">Total cobrado</div><div class="mv g">${fmt(totalCob)}</div></div>`;
 
-  document.getElementById('count-lbl').textContent=prestamos.length+' préstamo(s)';
+  const activos=prestamos.filter(p=>!p.pagos.every(x=>x.pagado));
+  const terminados=prestamos.filter(p=>p.pagos.length>0&&p.pagos.every(x=>x.pagado));
+  document.getElementById('count-lbl').textContent=activos.length+' activo(s)';
 
   if(!prestamos.length){
     lista.innerHTML='<div class="empty"><div class="empty-i">💸</div><div class="empty-t">No hay préstamos aún.<br>Toca <strong>＋</strong> para agregar el primero.</div></div>';return;
   }
 
-  prestamos.forEach(p=>{
+  function buildCard(p, isTerminado){
     const cli=clientes.find(c=>c.id===p.clienteId);
     const cuotas=p.pagos.filter(x=>!x.esCapital);
     const pag=cuotas.filter(x=>x.pagado).length;
@@ -926,8 +928,24 @@ function renderInicio(){
       <button class="lb i" onclick="editarPrestamo(${p.id})">✏️ Editar</button>
       <button class="lb d" onclick="eliminar(${p.id})">🗑</button>
     </div>`;
-    lista.appendChild(card);
-  });
+    if(isTerminado) card.style.opacity='0.75';
+    return card;
+  }
+
+  if(activos.length){
+    activos.forEach(p=>lista.appendChild(buildCard(p,false)));
+  } else {
+    const e=document.createElement('div');e.className='empty';
+    e.innerHTML='<div class="empty-i">🎉</div><div class="empty-t">¡No hay préstamos activos!</div>';
+    lista.appendChild(e);
+  }
+
+  if(terminados.length){
+    const sep=document.createElement('div');
+    sep.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin:18px 0 10px"><div style="flex:1;height:1px;background:var(--bd)"></div><span style="font-size:11px;font-weight:600;color:var(--t3)">✅ COBRADOS (${terminados.length})</span><div style="flex:1;height:1px;background:var(--bd)"></div></div>`;
+    lista.appendChild(sep);
+    terminados.forEach(p=>lista.appendChild(buildCard(p,true)));
+  }
 }
 
 // ===== REPORTE =====
