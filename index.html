@@ -902,7 +902,19 @@ function renderInicio(){
     const card=document.createElement('div');card.className='lc';
     // Calculate end date
     const fechaFin = p.pagos.length ? p.pagos.filter(x=>!x.esCapital).slice(-1)[0]?.fecha || p.fecha : p.fecha;
-    card.innerHTML=`<div class="lc-top"><div class="av">${ini(cli?cli.nombre:'?')}</div><div class="lc-m"><div class="lc-n">${cli?cli.nombre:'—'}</div><div class="lc-s">${p.plazo} periodos · ${p.tasa}% · ${freqLabel(p.freq||'mensual')}</div><div style="font-size:10px;color:var(--t3);margin-top:2px">📅 Inicio: ${p.fecha} &nbsp;·&nbsp; Vence: ${fechaFin}</div></div><span class="bdg ${term?'bdone':venc?'blate':'bok'}">${term?'Terminado':venc?venc+' venc.':'Al día'}</span></div>
+    // Calcular días restantes
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const fVenc = new Date(fechaFin+'T00:00:00');
+    const diasRest = Math.round((fVenc-hoy)/(1000*60*60*24));
+    let diasLabel='', diasColor='';
+    if(!term){
+      if(diasRest<0){ diasLabel=`⚠️ Vencido hace ${Math.abs(diasRest)} día${Math.abs(diasRest)!==1?'s':''}`; diasColor='#ef4444'; }
+      else if(diasRest===0){ diasLabel='⚠️ Vence hoy'; diasColor='#ef4444'; }
+      else if(diasRest<=5){ diasLabel=`🔴 Vence en ${diasRest} día${diasRest!==1?'s':''}`; diasColor='#ef4444'; }
+      else if(diasRest<=15){ diasLabel=`🟡 Vence en ${diasRest} días`; diasColor='#f59e0b'; }
+      else{ diasLabel=`🟢 Vence en ${diasRest} días`; diasColor='#22c55e'; }
+    }
+    card.innerHTML=`<div class="lc-top"><div class="av">${ini(cli?cli.nombre:'?')}</div><div class="lc-m"><div class="lc-n">${cli?cli.nombre:'—'}</div><div class="lc-s">${p.plazo} periodos · ${p.tasa}% · ${freqLabel(p.freq||'mensual')}</div><div style="font-size:10px;color:var(--t3);margin-top:2px">📅 Inicio: ${p.fecha} &nbsp;·&nbsp; Vence: ${fechaFin}</div>${!term?`<div style="font-size:11px;font-weight:600;color:${diasColor};margin-top:3px">${diasLabel}</div>`:''}</div><span class="bdg ${term?'bdone':venc?'blate':'bok'}">${term?'Terminado':venc?venc+' venc.':'Al día'}</span></div>
     <div class="lc-st">
       <div class="stt"><div class="stl">Capital</div><div class="stv">${fmt(p.capital)}</div></div>
       <div class="stt"><div class="stl">Cuota</div><div class="stv g">${fmt(p.cuota)}</div></div>
