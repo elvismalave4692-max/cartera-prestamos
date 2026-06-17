@@ -852,7 +852,7 @@ function renderInicio(){
   lista.innerHTML='';
 
   // Solo préstamos activos (no cobrados)
-  const prestActivos=prestamos.filter(p=>!p.pagos.every(x=>x.pagado));
+  const prestActivos=prestamos.filter(p=>p.pagos.length===0||!p.pagos.every(x=>x.pagado));
   const prestTerminados=prestamos.filter(p=>p.pagos.length>0&&p.pagos.every(x=>x.pagado));
 
   const totalCap=prestActivos.reduce((a,p)=>a+p.capital,0); // solo activos
@@ -882,12 +882,13 @@ function renderInicio(){
   }
 
   metricsEl.innerHTML=`
-    <div class="mc g"><div class="ml">Capital prestado</div><div class="mv g">${fmt(totalCap)}</div><div class="ms">${prestActivos.length} activo(s)</div></div>
+    <div class="mc g"><div class="ml">💰 En la calle</div><div class="mv g">${fmt(totalCap)}</div><div class="ms">${prestActivos.length} préstamo(s) activo(s)</div></div>
+    <div class="mc b"><div class="ml">📥 Te deben</div><div class="mv b">${fmt(prestActivos.reduce((a,p)=>a+p.pagos.filter(x=>!x.pagado).reduce((s,pg)=>s+pg.monto,0),0))}</div><div class="ms">Capital + intereses</div></div>
     <div class="mc b"><div class="ml">Interés/mes</div><div class="mv b">${fmt(totalIntMes)}</div></div>
     <div class="mc ${totalVenc?'w':''}"><div class="ml">Vencidos</div><div class="mv ${totalVenc?'w':''}">${totalVenc}</div></div>
     <div class="mc g"><div class="ml">Total cobrado</div><div class="mv g">${fmt(totalCob)}</div></div>`;
 
-  const activos=prestamos.filter(p=>!p.pagos.every(x=>x.pagado));
+  const activos=prestamos.filter(p=>p.pagos.length===0||!p.pagos.every(x=>x.pagado));
   const terminados=prestamos.filter(p=>p.pagos.length>0&&p.pagos.every(x=>x.pagado));
   document.getElementById('count-lbl').textContent=activos.length+' activo(s)';
 
