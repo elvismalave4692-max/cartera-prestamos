@@ -851,18 +851,20 @@ function renderInicio(){
   const bannerEl=document.getElementById('cap-banner-area');
   lista.innerHTML='';
 
-  const totalCap=prestamos.reduce((a,p)=>a+p.capital,0);
-  const totalIntMes=prestamos.reduce((a,p)=>a+p.capital*(p.tasa/100),0);
-  const totalVenc=prestamos.reduce((a,p)=>a+p.pagos.filter(x=>!x.pagado&&isVenc(x.fecha)).length,0);
+  // Solo préstamos activos (no cobrados)
+  const prestActivos=prestamos.filter(p=>!p.pagos.every(x=>x.pagado));
+  const prestTerminados=prestamos.filter(p=>p.pagos.length>0&&p.pagos.every(x=>x.pagado));
+
+  const totalCap=prestActivos.reduce((a,p)=>a+p.capital,0); // solo activos
+  const totalIntMes=prestActivos.reduce((a,p)=>a+p.capital*(p.tasa/100),0);
+  const totalVenc=prestActivos.reduce((a,p)=>a+p.pagos.filter(x=>!x.pagado&&isVenc(x.fecha)).length,0);
   const totalCob=prestamos.reduce((a,p)=>a+p.pagos.filter(x=>x.pagado&&!x.esCapital).reduce((s,pg)=>s+pg.monto,0),0);
-  // Todo el dinero cobrado (capital + intereses) vuelve al disponible
-  const totalCobrado=prestamos.reduce((a,p)=>a+p.pagos.filter(x=>x.pagado).reduce((s,pg)=>s+pg.monto,0),0);
+  // Disponible = Capital Total - lo que está en la calle (activos)
+  const disp=Math.max(0,capitalTotal-totalCap);
 
   // Banner capital
   if(capitalTotal>0){
-    const capEnCalle=Math.max(0,totalCap-totalCobrado);
-    const disp=Math.max(0,capitalTotal-capEnCalle);
-    const pct=Math.min(100,Math.round(capEnCalle/capitalTotal*100));
+    const pct=Math.min(100,Math.round(totalCap/capitalTotal*100));
     bannerEl.innerHTML=`<div class="cap-banner">
       <div class="cap-info">
         <div class="cap-l">Mi Capital</div>
@@ -880,7 +882,7 @@ function renderInicio(){
   }
 
   metricsEl.innerHTML=`
-    <div class="mc g"><div class="ml">Capital prestado</div><div class="mv g">${fmt(totalCap)}</div><div class="ms">${prestamos.length} préstamo(s)</div></div>
+    <div class="mc g"><div class="ml">Capital prestado</div><div class="mv g">${fmt(totalCap)}</div><div class="ms">${prestActivos.length} activo(s)</div></div>
     <div class="mc b"><div class="ml">Interés/mes</div><div class="mv b">${fmt(totalIntMes)}</div></div>
     <div class="mc ${totalVenc?'w':''}"><div class="ml">Vencidos</div><div class="mv ${totalVenc?'w':''}">${totalVenc}</div></div>
     <div class="mc g"><div class="ml">Total cobrado</div><div class="mv g">${fmt(totalCob)}</div></div>`;
