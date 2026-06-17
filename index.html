@@ -528,13 +528,14 @@ let pagosSocios = JSON.parse(localStorage.getItem('pagos_socios')||'[]');
 let socioNombres = JSON.parse(localStorage.getItem('socio_nombres')||'{"s1":"Socio 1","s2":"Socio 2"}');
 let gastos = JSON.parse(localStorage.getItem('gastos_v4')||'[]');
 let finTab = 'socios';
+let ajustes = {enCalle:null, teDeben:null, interesMes:null, vencidos:null, totalCobrado:null};
 let gastoFiltro = 'todo';
 let pagoSocioActual = '';
 let editId = null, pagosId = null;
 
 function save(){
   db.collection('app').doc('datos').set({
-    clientes,prestamos,historial,capitalTotal,pagosSocios,socioNombres,gastos,
+    clientes,prestamos,historial,capitalTotal,pagosSocios,socioNombres,gastos,ajustes,
     actualizado:new Date().toISOString()
   }).catch(e=>{ console.error(e); toast('⚠️ Error al guardar'); });
 }
@@ -882,11 +883,11 @@ function renderInicio(){
   }
 
   metricsEl.innerHTML=`
-    <div class="mc g"><div class="ml">💰 En la calle</div><div class="mv g">${fmt(totalCap)}</div><div class="ms">${prestActivos.length} préstamo(s) activo(s)</div></div>
-    <div class="mc b"><div class="ml">📥 Te deben</div><div class="mv b">${fmt(prestActivos.reduce((a,p)=>a+p.pagos.filter(x=>!x.pagado).reduce((s,pg)=>s+pg.monto,0),0))}</div><div class="ms">Capital + intereses</div></div>
-    <div class="mc b"><div class="ml">Interés/mes</div><div class="mv b">${fmt(totalIntMes)}</div></div>
-    <div class="mc ${totalVenc?'w':''}"><div class="ml">Vencidos</div><div class="mv ${totalVenc?'w':''}">${totalVenc}</div></div>
-    <div class="mc g"><div class="ml">Total cobrado</div><div class="mv g">${fmt(totalCob)}</div></div>`;
+    <div class="mc g" style="position:relative"><div class="ml">💰 En la calle</div><div class="mv g">${fmt(ajustes.enCalle!==null?ajustes.enCalle:totalCap)}</div><div class="ms">${prestActivos.length} préstamo(s) activo(s)</div><button onclick="editarAjuste('enCalle',${totalCap})" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--t3);cursor:pointer;font-size:12px">✏️</button></div>
+    <div class="mc b" style="position:relative"><div class="ml">📥 Te deben</div><div class="mv b">${fmt(ajustes.teDeben!==null?ajustes.teDeben:prestActivos.reduce((a,p)=>a+p.pagos.filter(x=>!x.pagado).reduce((s,pg)=>s+pg.monto,0),0))}</div><div class="ms">Capital + intereses</div><button onclick="editarAjuste('teDeben',${prestActivos.reduce((a,p)=>a+p.pagos.filter(x=>!x.pagado).reduce((s,pg)=>s+pg.monto,0),0)})" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--t3);cursor:pointer;font-size:12px">✏️</button></div>
+    <div class="mc b" style="position:relative"><div class="ml">Interés/mes</div><div class="mv b">${fmt(ajustes.interesMes!==null?ajustes.interesMes:totalIntMes)}</div><button onclick="editarAjuste('interesMes',${totalIntMes})" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--t3);cursor:pointer;font-size:12px">✏️</button></div>
+    <div class="mc ${totalVenc?'w':''}" style="position:relative"><div class="ml">Vencidos</div><div class="mv ${totalVenc?'w':''}">${ajustes.vencidos!==null?ajustes.vencidos:totalVenc}</div><button onclick="editarAjuste('vencidos',${totalVenc})" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--t3);cursor:pointer;font-size:12px">✏️</button></div>
+    <div class="mc g" style="position:relative"><div class="ml">Total cobrado</div><div class="mv g">${fmt(ajustes.totalCobrado!==null?ajustes.totalCobrado:totalCob)}</div><button onclick="editarAjuste('totalCobrado',${totalCob})" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--t3);cursor:pointer;font-size:12px">✏️</button></div>`;
 
   const activos=prestamos.filter(p=>p.pagos.length===0||!p.pagos.every(x=>x.pagado));
   const terminados=prestamos.filter(p=>p.pagos.length>0&&p.pagos.every(x=>x.pagado));
